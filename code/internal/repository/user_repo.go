@@ -214,6 +214,38 @@ func (r *UserRepo) TouchLastSeen(id int64) error {
 	return nil
 }
 
+// SetOnline marks a user online/offline and touches LastSeen
+func (r *UserRepo) SetOnline(id int64, online bool) error {
+	r.store.Mu().Lock()
+	defer r.store.Mu().Unlock()
+	now := time.Now().Format(time.RFC3339)
+	for i, rec := range r.store.Data().Users {
+		if rec.ID == id {
+			r.store.Data().Users[i].LastSeen = now
+			if online {
+				r.store.Data().Users[i].Status = "online"
+			} else {
+				r.store.Data().Users[i].Status = "offline"
+			}
+			return r.store.SaveLocked()
+		}
+	}
+	return nil
+}
+
+// SetStatus updates a user's custom status
+func (r *UserRepo) SetStatus(id int64, status string) error {
+	r.store.Mu().Lock()
+	defer r.store.Mu().Unlock()
+	for i, rec := range r.store.Data().Users {
+		if rec.ID == id {
+			r.store.Data().Users[i].Status = status
+			return r.store.SaveLocked()
+		}
+	}
+	return nil
+}
+
 // Search finds visible users by username/display name
 func (r *UserRepo) Search(q string) ([]models.User, error) {
 	r.store.Mu().RLock()

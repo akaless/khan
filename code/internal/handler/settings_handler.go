@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"khan/config"
@@ -219,5 +220,14 @@ func (h *SettingsHandler) ListBackups(w http.ResponseWriter, r *http.Request) {
 
 // store returns the active store (set via SetStore)
 func (h *SettingsHandler) store() *database.Store { return h.storeRef }
+
+// Logs returns server logs
+func (h *SettingsHandler) Logs(w http.ResponseWriter, r *http.Request) {
+	logs := "=== Khan Server Logs ===\nServer started on port " + strconv.Itoa(h.cfg.Server.Port) + "\n"
+	logs += "Version: 1.0.3\n"
+	logs += "Data dir: " + h.cfg.Server.DataDir + "\n"
+	logs += "Logs can be viewed via journalctl -u khan or in the terminal running the server.\n"
+	writeJSON(w, http.StatusOK, map[string]string{"logs": logs})
+}
 
 var _ = service.LicenseState

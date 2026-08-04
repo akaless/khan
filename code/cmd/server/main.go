@@ -103,16 +103,27 @@ func main() {
 
 		r.Get("/api/rooms", app.RoomsH.List)
 		r.Post("/api/rooms", app.RoomsH.Create)
+		r.Get("/api/rooms/public", app.RoomsH.PublicRooms)
+		r.Get("/api/rooms/private", app.RoomsH.PrivateRooms)
 		r.Post("/api/rooms/{id}/join", app.RoomsH.Join)
+		r.Post("/api/rooms/{id}/invite", app.RoomsH.Invite)
 		r.Post("/api/rooms/{id}/members", app.RoomsH.AddMember)
 		r.Delete("/api/rooms/{id}/members/{uid}", app.RoomsH.RemoveMember)
 		r.Get("/api/rooms/{id}/members", app.RoomsH.Members)
 		r.Post("/api/rooms/{id}/rename", app.RoomsH.Rename)
 		r.Post("/api/rooms/dm/{uid}", app.RoomsH.StartDM)
 
+		r.Get("/api/departments", app.RoomsH.Departments)
+		r.Post("/api/departments", app.RoomsH.CreateDepartment)
+		r.Delete("/api/departments/{id}", app.RoomsH.DeleteDepartment)
+
 		r.Get("/api/messages/{id}", app.MessagesH.List)
+		r.Get("/api/messages/search", app.MessagesH.Search)
+		r.Get("/api/messages/{id}/pins", app.MessagesH.Pins)
 		r.Post("/api/messages/{id}/edit", app.MessagesH.Edit)
 		r.Delete("/api/messages/{id}", app.MessagesH.Delete)
+		r.Post("/api/messages/{id}/forward", app.MessagesH.Forward)
+		r.Post("/api/messages/{id}/urgent", app.MessagesH.ToggleUrgent)
 		r.Post("/api/messages/{id}/reactions", app.MessagesH.AddReaction)
 		r.Delete("/api/messages/{id}/reactions", app.MessagesH.RemoveReaction)
 
@@ -126,7 +137,8 @@ func main() {
 		r.Post("/api/settings/network", app.Settings.NetworkUpdate)
 		r.Post("/api/settings/backup", app.Settings.Backup)
 		r.Get("/api/settings/backups", app.Settings.ListBackups)
-		})
+			r.Get("/api/settings/logs", app.Settings.Logs)
+			})
 
 	// ---- WebSocket (own auth — token via query or header) ----
 	r.Get("/ws", app.WS.ServeHTTP)

@@ -16,8 +16,63 @@ type RoomRepo struct {
 
 func NewRoomRepo(store *database.Store) *RoomRepo { return &RoomRepo{store: store} }
 
+// ListDepartments returns all departments
+func (r *RoomRepo) ListDepartments() ([]models.Department, error) {
+	r.store.Mu().RLock()
+	defer r.store.Mu().RUnlock()
+	depts := make([]models.Department, 0)
+	for _, rec := range r.store.Data().Departments {
+		depts = append(depts, models.Department{ID: rec.ID, Name: rec.Name})
+	}
+	return depts, nil
+}
+
+// CreateDepartment creates a department
+func (r *RoomRepo) CreateDepartment(name string) (*models.Department, error) {
+	r.store.Mu().Lock()
+	defer r.store.Mu().Unlock()
+	id := r.store.NextID("departments")
+	r.store.Data().Departments = append(r.store.Data().Departments, database.DepartmentRecord{
+		ID: id, Name: name,
+	})
+	if err := r.store.SaveLocked(); err != nil {
+		return nil, err
+	}
+	return &models.Department{ID: id, Name: name}, nil
+}
+
+// DeleteDepartment removes a department
+func (r *RoomRepo) DeleteDepartment(id int64) error {
+	r.store.Mu().Lock()
+	defer r.store.Mu().Unlock()
+	data := r.store.Data()
+	var kept []database.DepartmentRecord
+	for _, d := range data.Departments {
+		if d.ID != id {
+			kept = append(kept, d)
+		}
+	}
+	data.Departments = kept
+	for i := range data.Rooms {
+		if data.Rooms[i].Department == id {
+			data.Rooms[i].Department = 0
+		}
+	}
+	return r.store.SaveLocked()
+}
+
 func recToRoom(r database.RoomRecord) *models.Room {
-	room := &models.Room{ID: r.ID, Name: r.Name, Type: r.Type, CreatorID: r.CreatorID}
+	room := &models.Room{
+		ID:          r.ID,
+		Name:        r.Name,
+		Type:        r.Type,
+		CreatorID:   r.CreatorID,
+		Department:  r.Department,
+		Topic:       r.Topic,
+		Description: r.Description,
+		Avatar:      r.Avatar,
+		Archived:    r.Archived,
+	}
 	if t, err := time.Parse(time.RFC3339, r.CreatedAt); err == nil {
 		room.CreatedAt = t
 	}
@@ -31,11 +86,14 @@ func (r *RoomRepo) Create(room *models.Room) (int64, error) {
 
 	room.ID = r.store.NextID("rooms")
 	rec := database.RoomRecord{
-		ID:        room.ID,
-		Name:      room.Name,
-		Type:      room.Type,
-		CreatorID: room.CreatorID,
-		CreatedAt: room.CreatedAt.Format(time.RFC3339),
+		ID:          room.ID,
+		Name:        room.Name,
+		Type:        room.Type,
+		CreatorID:   room.CreatorID,
+		Department:  room.Department,
+		Topic:       room.Topic,
+		Description: room.Description,
+		CreatedAt:   room.CreatedAt.Format(time.RFC3339),
 	}
 	r.store.Data().Rooms = append(r.store.Data().Rooms, rec)
 	return room.ID, r.store.SaveLocked()
@@ -79,6 +137,19 @@ func (r *RoomRepo) ListPublic() ([]models.Room, error) {
 	rooms := make([]models.Room, 0)
 	for _, rec := range r.store.Data().Rooms {
 		if rec.Type == models.RoomPublic {
+			rooms = append(rooms, *recToRoom(rec))
+		}
+	}
+	return rooms, nil
+}
+
+// ListPrivateRooms returns private rooms (for admin browsing / invites)
+func (r *RoomRepo) ListPrivateRooms(userID int64) ([]models.Room, error) {
+	r.store.Mu().RLock()
+	defer r.store.Mu().RUnlock()
+	rooms := make([]models.Room, 0)
+	for _, rec := range r.store.Data().Rooms {
+		if rec.Type == models.RoomPrivate {
 			rooms = append(rooms, *recToRoom(rec))
 		}
 	}

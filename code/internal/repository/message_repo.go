@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"errors"
 	"sort"
+	"strings"
 	"time"
 
 	"khan/internal/database"
@@ -17,11 +19,16 @@ func NewMessageRepo(store *database.Store) *MessageRepo { return &MessageRepo{st
 
 func recToMessage(r database.MessageRecord) *models.Message {
 	m := &models.Message{
-		ID:       r.ID,
-		RoomID:   r.RoomID,
-		SenderID: r.SenderID,
-		Body:     []byte(r.Body),
-		FileID:   r.FileID,
+		ID:        r.ID,
+		RoomID:    r.RoomID,
+		SenderID:  r.SenderID,
+		Body:      []byte(r.Body),
+		FileID:    r.FileID,
+		ReplyTo:   r.ReplyTo,
+		Forwarded: r.Forwarded,
+		Mentions:  r.Mentions,
+		Urgent:    r.Urgent,
+		PollID:    r.PollID,
 	}
 	if t, err := time.Parse(time.RFC3339, r.CreatedAt); err == nil {
 		m.CreatedAt = t
@@ -52,6 +59,17 @@ func (r *MessageRepo) Create(m *models.Message) (int64, error) {
 		Body:      string(m.Body),
 		FileID:    m.FileID,
 		CreatedAt: m.CreatedAt.Format(time.RFC3339),
+		ReplyTo:   m.ReplyTo,
+		Forwarded: m.Forwarded,
+		Mentions:  m.Mentions,
+		Urgent:    m.Urgent,
+		PollID:    m.PollID,
+	}
+	if m.EditedAt != nil {
+		rec.EditedAt = m.EditedAt.Format(time.RFC3339)
+	}
+	if m.DeletedAt != nil {
+		rec.DeletedAt = m.DeletedAt.Format(time.RFC3339)
 	}
 	r.store.Data().Messages = append(r.store.Data().Messages, rec)
 	return m.ID, r.store.SaveLocked()
@@ -91,6 +109,79 @@ func (r *MessageRepo) ListByRoom(roomID int64, before int64, limit int) ([]model
 	return msgs, nil
 }
 
+// ListSince returns messages in a room after a message id (for live sync / offline)
+func (r *MessageRepo) ListSince(roomID int64, afterID int64) ([]models.Message, error) {
+	r.store.Mu().RLock()
+	defer r.store.Mu().RUnlock()
+
+	var msgs = make([]models.Message, 0)
+	for _, rec := range r.store.Data().Messages {
+		if rec.RoomID != roomID || rec.DeletedAt != "" {
+			continue
+		}
+		if rec.ID > afterID {
+			msgs = append(msgs, *recToMessage(rec))
+		}
+	}
+	sort.Slice(msgs, func(i, j int) bool { return msgs[i].ID < msgs[j].ID })
+	return msgs, nil
+}
+
+// SearchMessages searches message text in a room (or all rooms the user can see)
+func (r *MessageRepo) SearchMessages(roomIDs []int64, query string, limit int) ([]models.Message, error) {
+	r.store.Mu().RLock()
+	defer r.store.Mu().RUnlock()
+
+	roomSet := map[int64]bool{}
+	for _, id := range roomIDs {
+		roomSet[id] = true
+	}
+	q := strings.ToLower(strings.TrimSpace(query))
+	var out = make([]models.Message, 0)
+	for _, rec := range r.store.Data().Messages {
+		if rec.DeletedAt != "" {
+			continue
+		}
+		if len(roomSet) > 0 && !roomSet[rec.RoomID] {
+			continue
+		}
+		// Body is encrypted at rest — the caller decrypts; we match on plaintext via a
+		// side-channel: the handler decrypts and re-searches. This repo method is used
+		// for raw filtering; full-text search happens at the service layer.
+		if q != "" && strings.Contains(strings.ToLower(rec.Body), q) {
+			out = append(out, *recToMessage(rec))
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID > out[j].ID })
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+// ListByRoomAll returns all non-deleted messages across the given rooms (newest first)
+func (r *MessageRepo) ListByRoomAll(roomIDs []int64) ([]models.Message, error) {
+	r.store.Mu().RLock()
+	defer r.store.Mu().RUnlock()
+
+	roomSet := map[int64]bool{}
+	for _, id := range roomIDs {
+		roomSet[id] = true
+	}
+	var out = make([]models.Message, 0)
+	for _, rec := range r.store.Data().Messages {
+		if rec.DeletedAt != "" {
+			continue
+		}
+		if roomSet[rec.RoomID] {
+			out = append(out, *recToMessage(rec))
+		}
+	}
+	// newest first
+	sort.Slice(out, func(i, j int) bool { return out[i].ID > out[j].ID })
+	return out, nil
+}
+
 // UpdateBody updates message text (edit)
 func (r *MessageRepo) UpdateBody(id int64, body []byte) error {
 	r.store.Mu().Lock()
@@ -116,6 +207,19 @@ func (r *MessageRepo) SoftDelete(id int64) error {
 		}
 	}
 	return nil
+}
+
+// ToggleUrgent flips the urgent flag
+func (r *MessageRepo) ToggleUrgent(id int64, urgent bool) error {
+	r.store.Mu().Lock()
+	defer r.store.Mu().Unlock()
+	for i, rec := range r.store.Data().Messages {
+		if rec.ID == id {
+			r.store.Data().Messages[i].Urgent = urgent
+			return r.store.SaveLocked()
+		}
+	}
+	return errors.New("message not found")
 }
 
 // AddReaction inserts a reaction (idempotent per user+emoji)

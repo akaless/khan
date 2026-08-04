@@ -34,6 +34,10 @@ type App struct {
 	Messages *repository.MessageRepo
 	Sessions *repository.SessionRepo
 	Files    *repository.FileRepo
+	Reads    *repository.ReadRepo
+	Polls    *repository.PollRepo
+	Invites  *repository.InviteRepo
+	Pins     *repository.PinRepo
 
 	Auth     *service.AuthService
 	UserSvc  *service.UserService
@@ -43,14 +47,14 @@ type App struct {
 	Hub      *ws.Hub
 
 	// Handlers
-	AuthH    *handler.AuthHandler
-	UsersH   *handler.UserHandler
-	RoomsH   *handler.RoomHandler
+	AuthH     *handler.AuthHandler
+	UsersH    *handler.UserHandler
+	RoomsH    *handler.RoomHandler
 	MessagesH *handler.MessageHandler
-	FilesH   *handler.FileHandler
-	Settings *handler.SettingsHandler
-	Setup    *handler.SetupHandler
-	WS       *handler.WSHandler
+	FilesH    *handler.FileHandler
+	Settings  *handler.SettingsHandler
+	Setup     *handler.SetupHandler
+	WS        *handler.WSHandler
 }
 
 // New wires everything together
@@ -65,6 +69,10 @@ func New(cfg *config.Config) (*App, error) {
 	messages := repository.NewMessageRepo(store)
 	sessions := repository.NewSessionRepo(store)
 	files := repository.NewFileRepo(store)
+	reads := repository.NewReadRepo(store)
+	polls := repository.NewPollRepo(store)
+	invites := repository.NewInviteRepo(store)
+	pins := repository.NewPinRepo(store)
 
 	// Derive crypto key from config secret (auto-generated if empty)
 	secret := cfg.Security.EncryptionKey
@@ -76,7 +84,7 @@ func New(cfg *config.Config) (*App, error) {
 	crypto := service.NewCryptoService(secret)
 	auth := service.NewAuthService(users, sessions, cfg)
 	userSvc := service.NewUserService(users, sessions, auth)
-	roomSvc := service.NewRoomService(rooms, users)
+	roomSvc := service.NewRoomService(rooms, users, invites)
 	msgSvc := service.NewMessageService(messages, rooms, users, crypto)
 	hub := ws.NewHub()
 
@@ -95,6 +103,7 @@ func New(cfg *config.Config) (*App, error) {
 	app := &App{
 		Cfg: cfg, Store: store,
 		Users: users, Rooms: rooms, Messages: messages, Sessions: sessions, Files: files,
+		Reads: reads, Polls: polls, Invites: invites, Pins: pins,
 		Auth: auth, UserSvc: userSvc, RoomSvc: roomSvc, MsgSvc: msgSvc, Crypto: crypto, Hub: hub,
 	}
 
@@ -105,10 +114,12 @@ func New(cfg *config.Config) (*App, error) {
 	app.AuthH = handler.NewAuthHandler(auth)
 	app.UsersH = handler.NewUserHandler(userSvc, users, auth)
 	app.RoomsH = handler.NewRoomHandler(roomSvc)
+	app.RoomsH.SetRepos(invites, rooms)
 	app.MessagesH = handler.NewMessageHandler(msgSvc)
+	app.MessagesH.SetRepos(reads, pins, polls)
 	app.FilesH = handler.NewFileHandler(files, rooms, cfg, crypto)
 	app.Setup = handler.NewSetupHandler(users, auth, userSvc)
-	app.WS = handler.NewWSHandler(hub, auth, msgSvc, roomSvc, userSvc, rooms, users, messages)
+	app.WS = handler.NewWSHandler(hub, auth, msgSvc, roomSvc, userSvc, rooms, users, messages, reads, polls, invites, pins)
 	return app, nil
 }
 
