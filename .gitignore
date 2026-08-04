@@ -23,5 +23,6 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Binary builds (distribute via Codeberg Releases)
-dist/
+# Raw binaries in installers (built copies — final artifacts in dist/)
+installers/windows/khan.exe
+installers/linux/deb/usr/bin/khan
