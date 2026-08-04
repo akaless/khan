@@ -1,0 +1,40 @@
+# Maintainer: aDiB <adib@khan.local>
+pkgname=khan
+pkgver=1.0.3
+pkgrel=1
+pkgdesc="Persian/English LAN chat server - single binary, port 1727, Telegram-like UI, Ed25519 licensing"
+arch=('x86_64')
+url="https://codeberg.org/adiib/khan1.0.3"
+license=('custom')
+depends=('glibc')
+makedepends=()
+optdepends=('systemd: for systemd service')
+provides=('khan')
+conflicts=('khan')
+backup=('etc/khan/config.json')
+install=khan.install
+source=("khan-linux"
+        "khan.service"
+        "config.json"
+        "LICENSE")
+sha256sums=('f8a2480b99c264b7def16db20ca27d4465236d3ffb299c6af97a3ba83c1d9734'
+            '280ab4c3cf3c499c95b88479f56b8777bdaf0eb3eeb732c64aceb96a9359c398'
+            'f0f6cf189bad4c2b595ba38687f2da9330d3b518a6770deed3f46c29de4f44a7'
+            '6204ba12b842eb3265658b451bc6c8a841fa5e469e9c8db4e942225b8ca7c089')
+
+package() {
+    # Install binary
+    install -Dm755 "$srcdir/khan-linux" "$pkgdir/usr/bin/khan"
+    
+    # Install systemd service
+    install -Dm644 "$srcdir/khan.service" "$pkgdir/usr/lib/systemd/system/khan.service"
+    
+    # Install default config
+    install -Dm644 "$srcdir/config.json" "$pkgdir/etc/khan/config.json"
+    
+    # Install license
+    install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    
+    # Create data directory
+    install -dm755 "$pkgdir/var/lib/khan"
+}
