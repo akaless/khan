@@ -186,7 +186,7 @@ func (h *SettingsHandler) backupDir() string {
 	return dir
 }
 
-// ListBackups returns the most recent backup files
+// ListBackups returns the most recent backup folders
 func (h *SettingsHandler) ListBackups(w http.ResponseWriter, r *http.Request) {
 	dir := h.backupDir()
 	entries, err := os.ReadDir(dir)
@@ -202,16 +202,21 @@ func (h *SettingsHandler) ListBackups(w http.ResponseWriter, r *http.Request) {
 	}
 	var backups = make([]backupInfo, 0)
 	for _, e := range entries {
-		if e.IsDir() {
-			continue
+		if !e.IsDir() {
+			continue // only backup directories
 		}
-		info, err := e.Info()
-		if err != nil {
-			continue
-		}
+		// Calculate total size of backup directory
+		var totalSize int64
+		filepath.Walk(filepath.Join(dir, e.Name()), func(path string, info os.FileInfo, err error) error {
+			if err == nil && !info.IsDir() {
+				totalSize += info.Size()
+			}
+			return nil
+		})
+		info, _ := e.Info()
 		backups = append(backups, backupInfo{
 			Name: e.Name(),
-			Size: info.Size(),
+			Size: totalSize,
 			Time: info.ModTime().Format("2006-01-02 15:04:05"),
 		})
 	}
