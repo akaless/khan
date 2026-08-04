@@ -1,0 +1,20 @@
+{
+  "name": "خان - چت سازمانی",
+  "short_name": "خان",
+  "description": "چت سازمانی سبک برای شبکه محلی",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0e1621",
+  "theme_color": "#2b5278",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/img/khan-logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "lang": "fa",
+  "dir": "rtl"
+}

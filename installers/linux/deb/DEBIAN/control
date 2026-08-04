@@ -1,0 +1,20 @@
+Package: khan
+Version: 1.0.3
+Section: net
+Priority: optional
+Architecture: amd64
+Depends: libc6 (>= 2.17)
+Maintainer: Khan Team <support@khan-chat.ir>
+Description: خان — چت سازمانی سبک فارسی
+ چت سازمانی سبک، مدرن و امن برای شبکه‌های محلی.
+ یک فایل، بدون نصب پیچیده، بدون اینترنت.
+ «خانِ شما، جای گپ‌های تیم»
+ .
+ Features:
+  * Live chat with WebSocket
+  * 4 user roles + hidden super admin
+  * Ed25519 license system (20 users free)
+  * Argon2id + AES-256-GCM security
+  * Persian RTL + English UI
+  * PWA installable
+Homepage: https://codeberg.org/adiib/khan1.0.2

@@ -1,0 +1,27 @@
+# Security
+keys/private.key
+keys/private_key.pem
+*.pem
+*.key
+!keys/public.key
+
+# Runtime
+data/
+*.db.json
+*.db
+*.log
+config.json
+
+# Build
+/bin/
+/tmp/
+
+# System
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Binary builds (distribute via Codeberg Releases)
+dist/

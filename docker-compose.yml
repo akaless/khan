@@ -1,0 +1,23 @@
+# ─── خان (Khan) — docker-compose ───
+# اجرای آسان با داکر: docker compose up -d
+# ──────────────────────────────────────────
+
+services:
+  khan:
+    build: .
+    container_name: khan
+    restart: unless-stopped
+    ports:
+      - "1727:1727"
+    volumes:
+      - ./data:/app/data
+      - ./config.json:/app/config.json:ro
+    environment:
+      - TZ=Asia/Tehran
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:1727/api/settings/info"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+# داده‌ها در ./data ذخیره می‌شوند — بکاپ = کپی پوشه

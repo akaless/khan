@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0e1621"/>
+      <stop offset="50%" stop-color="#17212b"/>
+      <stop offset="100%" stop-color="#0e1621"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f5d67b"/>
+      <stop offset="50%" stop-color="#d4af37"/>
+      <stop offset="100%" stop-color="#b8860b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="300" fill="url(#bg)"/>
+  <circle cx="600" cy="150" r="120" fill="none" stroke="url(#gold)" stroke-width="6" opacity="0.15"/>
+
+  <!-- Logo emblem (simplified) -->
+  <g transform="translate(180, 60)">
+    <circle cx="90" cy="90" r="88" fill="none" stroke="url(#gold)" stroke-width="5"/>
+    <circle cx="90" cy="90" r="78" fill="#17212b" stroke="#3a3a3a" stroke-width="2"/>
+    <!-- Roof -->
+    <path d="M60 70 L90 45 L120 70" fill="none" stroke="url(#gold)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Khan calligraphy -->
+    <text x="90" y="105" text-anchor="middle" font-family="serif" font-size="38" font-weight="bold" fill="url(#gold)">خان</text>
+    <!-- Mustache -->
+    <path d="M60 120 Q75 132 90 124 Q105 132 120 120" fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M60 120 Q50 126 47 116" fill="none" stroke="url(#gold)" stroke-width="4" stroke-linecap="round"/>
+    <path d="M120 120 Q130 126 133 116" fill="none" stroke="url(#gold)" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <!-- Title -->
+  <text x="330" y="130" font-family="serif" font-size="72" font-weight="bold" fill="#ffffff">خان</text>
+  <text x="332" y="175" font-family="sans-serif" font-size="22" fill="#8ab4f8">چت سازمانی سبک فارسی</text>
+  <text x="332" y="215" font-family="sans-serif" font-size="16" fill="#5c6b7a">«خانِ شما، جای گپ‌های تیم»</text>
+
+  <!-- Chips -->
+  <g transform="translate(330, 240)">
+    <rect x="0" y="0" width="70" height="26" rx="13" fill="#2b5278"/>
+    <text x="35" y="18" text-anchor="middle" font-size="12" fill="#fff" font-family="sans-serif">⚡ سبک</text>
+    <rect x="80" y="0" width="70" height="26" rx="13" fill="#2b5278"/>
+    <text x="115" y="18" text-anchor="middle" font-size="12" fill="#fff" font-family="sans-serif">🔐 امن</text>
+    <rect x="160" y="0" width="90" height="26" rx="13" fill="#2b5278"/>
+    <text x="205" y="18" text-anchor="middle" font-size="12" fill="#fff" font-family="sans-serif">🏠 آفلاین LAN</text>
+    <rect x="260" y="0" width="80" height="26" rx="13" fill="#2b5278"/>
+    <text x="300" y="18" text-anchor="middle" font-size="12" fill="#fff" font-family="sans-serif">🌐 RTL</text>
+  </g>
+
+  <!-- Right decorative -->
+  <g transform="translate(950, 60)" opacity="0.3">
+    <circle cx="90" cy="90" r="85" fill="none" stroke="url(#gold)" stroke-width="3"/>
+    <path d="M62 72 L90 48 L118 72" fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round"/>
+    <text x="90" y="105" text-anchor="middle" font-family="serif" font-size="34" fill="url(#gold)">خان</text>
+    <path d="M62 118 Q77 130 90 122 Q103 130 118 118" fill="none" stroke="url(#gold)" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <!-- Version -->
+  <text x="1150" y="285" text-anchor="end" font-family="monospace" font-size="13" fill="#5c6b7a">v1.0.0</text>
+</svg>
