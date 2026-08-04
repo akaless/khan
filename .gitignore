@@ -10,7 +10,7 @@ data/
 *.db.json
 *.db
 *.log
-config.json
+/config.json
 
 # Build
 /bin/

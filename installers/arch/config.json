@@ -1,0 +1,26 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 1727,
+    "data_dir": "/var/lib/khan",
+    "db_path": "/var/lib/khan/khan.db.json",
+    "address_type": "ip",
+    "ip": "192.168.1.100",
+    "dns": "",
+    "version": "1.0.3"
+  },
+  "backup": {
+    "enabled": true,
+    "interval_hours": 12,
+    "backup_path": "/var/lib/khan/backups",
+    "max_backups": 10
+  },
+  "license": {
+    "path": "/var/lib/khan/license.key"
+  },
+  "tls": {
+    "enabled": false,
+    "cert_path": "",
+    "key_path": ""
+  }
+}
