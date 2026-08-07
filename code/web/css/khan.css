@@ -1517,6 +1517,31 @@ input, textarea, select {
 
 .online-indicator .dot.offline { background: var(--text-quaternary); }
 
+/* Online light / badge for the Users sidebar tab */
+.online-light {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #27a644;
+  box-shadow: 0 0 6px rgba(39, 166, 68, .8);
+  margin-right: 2px;
+  flex-shrink: 0;
+}
+.online-badge {
+  position: absolute;
+  bottom: -2px;
+  left: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #27a644;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 4px rgba(39, 166, 68, .7);
+  z-index: 2;
+}
+.chat-item .avatar { position: relative; }
+
 /* Mobile */
 .mobile-hamburger {
   display: none;
@@ -1569,6 +1594,10 @@ input, textarea, select {
   }
 
   .mobile-hamburger { display: inline-flex; }
+
+  /* 4 sidebar tabs overflow narrow phones — allow wrap so all stay tappable */
+  .sidebar-tabs { flex-wrap: wrap; row-gap: 6px; }
+  .sidebar-tabs button { flex: 1 1 45%; min-width: 0; font-size: 12px; padding: 8px 6px; }
 
   .msg-group { max-width: 88%; }
 

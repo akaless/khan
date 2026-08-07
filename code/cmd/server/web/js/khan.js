@@ -39,6 +39,9 @@ const I18N = {
     adminPanel: 'پنل مدیریت',
     logout: 'خروج',
     online: 'آنلاین',
+    noOnline: 'هیچ‌کس آنلاین نیست',
+    allUsers: 'همه کاربران',
+    admin: 'مدیر',
     offline: 'آفلاین',
     members: 'عضو',
     // Chat
@@ -55,6 +58,7 @@ const I18N = {
     noMessages: 'هنوز پیامی نیست',
     noMessagesDesc: 'اولین پیام را بفرستید!',
     typing: 'در حال نوشتن',
+    someone: 'یک نفر',
     replyingTo: 'پاسخ به',
     emoji: 'ایموجی',
     stickers: 'استیکر',
@@ -141,6 +145,9 @@ const I18N = {
     none: 'بدون بخش',
     // Misc
     online: 'آنلاین',
+    noOnline: 'هیچ‌کس آنلاین نیست',
+    allUsers: 'همه کاربران',
+    admin: 'مدیر',
     offline: 'آفلاین',
     lastSeen: 'آخرین بازدید',
   },
@@ -173,6 +180,9 @@ const I18N = {
     adminPanel: 'Admin Panel',
     logout: 'Logout',
     online: 'Online',
+    noOnline: 'No one is online',
+    allUsers: 'All users',
+    admin: 'Admin',
     offline: 'Offline',
     members: 'members',
     khanChat: 'Khan',
@@ -188,6 +198,7 @@ const I18N = {
     noMessages: 'No messages yet',
     noMessagesDesc: 'Send the first message!',
     typing: 'is typing',
+    someone: 'someone',
     replyingTo: 'Reply to',
     emoji: 'Emoji',
     stickers: 'Stickers',
@@ -351,6 +362,7 @@ const app = createApp({
 
       // Messages
       typingUsers: {},
+      typingNames_: {},
       pinnedMessages: [],
       currentRoomUrgent: false,
       searchResults: [],
@@ -405,14 +417,16 @@ const app = createApp({
     },
 
     typingNames() {
-      const names = [];
-      for (const id in this.typingUsers) {
-        if (id == this.session.user.id) continue;
-        const u = this.users.find(x => x.id == id);
-        names.push(u ? (u.display_name || u.username) : 'کسی');
-      }
-      return names;
-    },
+          const names = [];
+          for (const id in this.typingUsers) {
+            if (id == this.session.user.id) continue;
+            const u = this.users.find(x => x.id == id);
+            // Prefer the live WS-sent name, then the user record, then a generic label
+            const stored = (this.typingNames_ || {})[id];
+            names.push(stored || (u && (u.display_name || u.username)) || this.t('someone'));
+          }
+          return names;
+        },
 
     canManageRoom() {
       const u = this.session.user;
@@ -425,6 +439,22 @@ const app = createApp({
     isAdmin() {
       const r = this.session.user ? this.session.user.role : '';
       return ['adm', 'sadm'].includes(r);
+    },
+
+    // Alias so the template's `needsSetup` (v-if in login card) tracks setupMode
+    needsSetup() {
+      return this.setupMode;
+    },
+
+    // Users tab: only visible users (backend already excludes the hidden super admin)
+    onlineVisibleUsers() {
+      return (this.users || []).filter(u => u.id !== (this.session.user || {}).id && u.online);
+    },
+
+    visibleUsersSorted() {
+      return (this.users || [])
+        .filter(u => u.id !== (this.session.user || {}).id)
+        .sort((a, b) => (b.online ? 1 : 0) - (a.online ? 1 : 0) || (a.display_name || a.username || '').localeCompare(b.display_name || b.username || ''));
     },
 
     licenseIcon() {
@@ -771,6 +801,23 @@ const app = createApp({
         await this.loadAll();
         const fresh = this.rooms.find(r => r.id === room.id);
         if (fresh) await this.openRoom(fresh);
+      } catch (e) {
+        this.toast(e.message, 'error');
+      }
+    },
+
+    async startDM(u) {
+      if (!u) return;
+      try {
+        const data = await this.api(`/api/rooms/start-dm/${u.id}`, { method: 'POST' });
+        const fresh = this.rooms ? this.rooms.find(r => r.id === data.room_id) : null;
+        if (fresh) await this.openRoom(fresh);
+        else {
+          // reload rooms so the new DM appears, then open it
+          await this.loadRooms();
+          const again = this.rooms.find(r => r.id === data.room_id);
+          if (again) await this.openRoom(again);
+        }
       } catch (e) {
         this.toast(e.message, 'error');
       }
@@ -1797,6 +1844,9 @@ const app = createApp({
           const roomId = ev.room_id;
           this.messages[roomId] = (this.messages[roomId] || []).filter(m => m.id !== ev.payload);
           this.pinnedMessages = this.pinnedMessages.filter(p => p.id !== ev.payload);
+          // a pinned/urgent notification for this message should no longer exist
+          this.closeRoomNotifications(roomId);
+          this.checkUrgent();
           break;
         }
         case 'reaction': {
@@ -1819,9 +1869,14 @@ const app = createApp({
           if (roomId !== this.currentRoomId) break;
           const uid = ev.payload.user_id;
           if (uid === this.session.user.id) break;
+          // keep the sender's name so the indicator can show WHO is typing
           this.typingUsers[uid] = true;
+          this.typingNames_[uid] = (ev.payload.name || '').trim();
           clearTimeout(this.typingUsers[uid + '_t']);
-          this.typingUsers[uid + '_t'] = setTimeout(() => delete this.typingUsers[uid], 2500);
+          this.typingUsers[uid + '_t'] = setTimeout(() => {
+            delete this.typingUsers[uid];
+            delete this.typingNames_[uid];
+          }, 2500);
           break;
         }
         case 'presence': {
@@ -1912,11 +1967,42 @@ const app = createApp({
           const n = new Notification(title, { body, icon: '/img/khan-logo.jpg', tag: 'khan-' + roomId, requireInteraction: !!msg.urgent });
           n.onclick = () => {
             window.focus();
-            if (room) this.openRoom(room);
+            if (room) {
+              const target = this.messages[room.id] || [];
+              // open the room, then jump to the exact message if we have it
+              if (this.currentRoom && this.currentRoom.id === room.id && this.messages[this.currentRoom.id]) {
+                this.scrollToMessage(msg.id);
+              } else {
+                this.openRoom(room).then(() => {
+                  if (this.messages[room.id]) this.scrollToMessage(msg.id);
+                });
+              }
+            }
             n.close();
           };
         } catch (e) {}
       }
+    },
+
+    // Scroll the messages pane so the given message id is in view (used by notif click)
+    scrollToMessage(id) {
+      this.$nextTick(() => {
+        const el = this.$refs.messagesArea;
+        if (!el) return;
+        const target = el.querySelector(`[data-msg-id="${id}"]`);
+        if (target) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      });
+    },
+
+    // Close any live desktop notification for a room (used when its message is deleted)
+    closeRoomNotifications(roomId) {
+      if (!('Notification' in window)) return;
+      try {
+        // close all notifications tagged for this room
+        for (const n of Notification.getNotifications ? Notification.getNotifications() : []) {
+          if (n.tag === 'khan-' + roomId) n.close();
+        }
+      } catch (e) {}
     },
   },
 

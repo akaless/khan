@@ -99,6 +99,7 @@
           <button :class="{ active: sidebarTab === 'chats' }" @click="sidebarTab = 'chats'">💬 {{ t('chats') }}</button>
           <button :class="{ active: sidebarTab === 'rooms' }" @click="sidebarTab = 'rooms'">🏠 {{ t('rooms') }}</button>
           <button :class="{ active: sidebarTab === 'search' }" @click="openSearch">🔍 {{ t('search') }}</button>
+          <button :class="{ active: sidebarTab === 'users' }" @click="sidebarTab = 'users'">👥 {{ t('users') }}</button>
         </div>
 
         <div class="chat-list" v-if="sidebarTab === 'chats'">
@@ -185,7 +186,7 @@
           </div>
         </div>
 
-        <div class="chat-list" v-else>
+        <div class="chat-list" v-else-if="sidebarTab === 'search'">
           <div class="search-box" style="margin-bottom: 12px;">
             <span>🔍</span>
             <input v-model="smartSearchQuery" :placeholder="t('smartSearch')" @keyup.enter="doSearch">
@@ -202,6 +203,30 @@
           <div v-if="!searchResults.length" class="empty-state" style="padding: 40px 20px;">
             <div class="empty-icon">🔍</div>
             <div class="empty-title">{{ t('searchMessages') }}</div>
+          </div>
+        </div>
+
+        <!-- Users tab: every visible member with an online/offline light (hidden super admin excluded) -->
+        <div class="chat-list" v-else-if="sidebarTab === 'users'">
+          <div class="department-header">🟢 {{ t('online') }} ({{ onlineVisibleUsers.length }})</div>
+          <div v-for="u in onlineVisibleUsers" :key="'ou'+u.id" class="chat-item" @click="startDM(u)">
+            <div class="avatar small" :style="avatarStyle(u)"><span class="online-badge"></span>{{ initials(u.display_name || u.username) }}</div>
+            <div class="chat-item-info">
+              <div class="chat-item-top"><span class="chat-item-name">{{ u.display_name || u.username }}</span><span class="online-light" title="آنلاین"></span></div>
+              <div class="chat-item-preview"><span class="chat-item-preview-text">{{ t('online') }}</span></div>
+            </div>
+          </div>
+          <div v-if="!onlineVisibleUsers.length" class="empty-state" style="padding: 40px 20px;">
+            <div class="empty-icon">🌙</div>
+            <div class="empty-title">{{ t('noOnline') }}</div>
+          </div>
+          <div class="department-header" style="margin-top:8px;">🎛️ {{ t('allUsers') }}</div>
+          <div v-for="u in visibleUsersSorted" :key="'au'+u.id" class="chat-item" @click="startDM(u)">
+            <div class="avatar small" :style="avatarStyle(u)">{{ initials(u.display_name || u.username) }}</div>
+            <div class="chat-item-info">
+              <div class="chat-item-top"><span class="chat-item-name">{{ u.display_name || u.username }}</span><span class="dot" :class="{ offline: !u.online }"></span></div>
+              <div class="chat-item-preview"><span class="chat-item-preview-text">{{ u.online ? t('online') : (u.role === 'adm' ? t('admin') : '') }}</span></div>
+            </div>
           </div>
         </div>
 
@@ -262,6 +287,7 @@
 
             <div v-for="(m, idx) in group" :key="m.id"
                  class="msg-group" :class="m.sender_id === session.user.id ? 'own' : 'other'"
+                 :data-msg-id="m.id"
                  @contextmenu.prevent="openContextMenu($event, m)">
 
               <!-- Reply quote -->
@@ -371,6 +397,7 @@
           <div class="composer">
             <button class="btn-icon" @click="showEmojis = !showEmojis" :title="t('emoji')">😊</button>
             <button class="btn-icon" @click="showStickers = !showStickers" :title="t('stickers')">🎨</button>
+            <button class="btn-icon" @click="openPollModal" :title="t('createPoll')">📊</button>
             <textarea ref="composer" v-model="draft" :placeholder="t('messagePlaceholder')"
                       @keydown.enter.exact.prevent="sendMessage"
                       @keydown="onComposerKeydown"

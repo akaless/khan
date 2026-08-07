@@ -35,7 +35,7 @@ func (h *SettingsHandler) SetStore(s *database.Store) { h.storeRef = s }
 func (h *SettingsHandler) Info(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"name":         "خان",
-		"version": "1.0.4",
+		"version": "1.0.5",
 		"address_type": h.cfg.Server.AddressType,
 		"ip":           h.cfg.Server.IP,
 		"dns":          h.cfg.Server.DNS,
@@ -294,7 +294,7 @@ func (h *SettingsHandler) store() *database.Store { return h.storeRef }
 // Logs returns server logs
 func (h *SettingsHandler) Logs(w http.ResponseWriter, r *http.Request) {
 	logs := "=== Khan Server Logs ===\nServer started on port " + strconv.Itoa(h.cfg.Server.Port) + "\n"
-	logs += "Version: 1.0.4\n"
+	logs += "Version: 1.0.5\n"
 	logs += "Data dir: " + h.cfg.Server.DataDir + "\n"
 	logs += "Logs can be viewed via journalctl -u khan or in the terminal running the server.\n"
 	writeJSON(w, http.StatusOK, map[string]string{"logs": logs})
