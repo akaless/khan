@@ -2,7 +2,9 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"khan/internal/models"
 	"khan/internal/repository"
@@ -145,4 +147,52 @@ func (h *UserHandler) SetRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+// Export writes all visible users as a CSV file (opens in Excel, UTF-8 BOM
+// so Persian displays correctly). Newline-separated header + rows.
+func (h *UserHandler) Export(w http.ResponseWriter, r *http.Request) {
+	users, err := h.repo.ListVisible()
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "خطای داخلی")
+		return
+	}
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", "attachment; filename=khan-users.csv")
+	// UTF-8 BOM so Excel opens Persian/RTL correctly
+	w.Write([]byte{0xEF, 0xBB, 0xBF})
+	w.Write([]byte("id,username,display_name,role,active,created_at\n"))
+	for i := range users {
+		u := users[i]
+		created := ""
+		if !u.CreatedAt.IsZero() {
+			created = u.CreatedAt.Format("2006-01-02 15:04:05")
+		}
+		w.Write([]byte(fmt.Sprintf("%d,%s,%s,%s,%t,%s\n",
+			u.ID, csvEscape(u.Username), csvEscape(u.DisplayName),
+			roleName(u.Role), u.Active, created)))
+	}
+}
+
+// csvEscape wraps a CSV field in double quotes if it contains a comma,
+// quote, or newline (RFC 4180). Doubles embedded quotes.
+func csvEscape(s string) string {
+	if strings.ContainsAny(s, ",\"\n") {
+		return "\"" + strings.ReplaceAll(s, "\"", "\"\"") + "\""
+	}
+	return s
+}
+
+// roleName maps a role code to a human-readable label.
+func roleName(role string) string {
+	switch role {
+	case models.RoleAdmin:
+		return "admin"
+	case models.RoleSupervisor:
+		return "supervisor"
+	case models.RoleSuperAdmin:
+		return "super_admin"
+	default:
+		return "user"
+	}
 }

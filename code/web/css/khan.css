@@ -1537,6 +1537,15 @@ input, textarea, select {
   .info-panel { display: none; }
 }
 
+/* Small desktop / iPad — keep sidebar visible but compact */
+@media (max-width: 900px) {
+  .app-layout { grid-template-columns: 240px 1fr; }
+  .chat-header-status { display: none; }
+  .admin-toolbar { flex-wrap: wrap; gap: 8px; }
+  .admin-toolbar .btn-primary,
+  .admin-toolbar .btn-secondary { flex: 1 1 auto; }
+}
+
 @media (max-width: 768px) {
   .app-layout { grid-template-columns: 1fr; }
 
@@ -1564,6 +1573,26 @@ input, textarea, select {
   .msg-group { max-width: 88%; }
 
   .composer { border-radius: var(--r-lg); }
+
+  /* Mobile: admin table becomes horizontally scrollable so it never overflows */
+  .admin-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .admin-table { min-width: 560px; }
+
+  /* info panel becomes a bottom drawer on small screens */
+  .info-panel {
+    display: flex;
+    position: fixed;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    top: auto;
+    max-height: 70vh;
+    width: 100%;
+    z-index: 90;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--sp-4));
+  }
+  [dir="rtl"] .info-panel { right: 0; left: 0; }
 }
 
 @media (max-width: 480px) {
@@ -1573,6 +1602,34 @@ input, textarea, select {
   .admin-body { padding: var(--sp-3); }
   .modal { padding: var(--sp-4); }
   .login-card { padding: var(--sp-5); }
+
+  /* Phone: full-width buttons in modals for easy touch */
+  .modal-actions { flex-direction: column; }
+  .modal-actions .btn-primary,
+  .modal-actions .btn-secondary { width: 100%; min-height: 44px; }
+
+  /* Composer: keep emoji/sticker/attach/send reachable */
+  .composer { gap: 4px; }
+  .composer .btn-icon { min-width: 38px; min-height: 38px; }
+
+  /* Sidebar narrower, nearer edge */
+  .sidebar { width: 88%; max-width: 320px; }
+}
+
+@media (max-width: 360px) {
+  .sidebar-header { padding: var(--sp-2); }
+  .profile-name { font-size: 13px; }
+  .sidebar-search { padding: var(--sp-2) var(--sp-2); }
+}
+
+/* Safe area for notched phones in portrait & landscape */
+@supports (padding: max(0px)) {
+  .composer-wrap,
+  .chat-header {
+    padding-left: max(var(--tok-sp-3, 16px), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--tok-sp-3, 16px), env(safe-area-inset-right, 0px));
+  }
+  .sidebar { padding-bottom: env(safe-area-inset-bottom, 0px); }
 }
 
 /* Reduced motion */

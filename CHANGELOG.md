@@ -1,36 +1,20 @@
-# Changelog
+# تغییرات خان (Khan)
 
-All notable changes to Khan project will be documented in this file.
+## v1.0.4 — 2026-08-07
+### ✨ امکانات جدید
+- 🔐 **TLS/HTTPS واقعی** — سرور می‌تواند با گواهی self-signed خودکار روی HTTPS/WSS اجرا شود (گزینه `tls_enabled` در config، تولید خودکار گواهی در data dir). پیام‌ها در انتقال رمزنگاری می‌شوند.
+- ⬇️ **خروجی اکسل کاربران** — دکمه «خروجی اکسل» در پنل ادمین، فهرست کاربران را به صورت CSV (سازگار با Excel، شامل فارسی) دانلود می‌کند.
+- 🔄 **بازیابی بکاپ از پنل** — دکمه بازیابی در کنار هر بکاپ، داده را از بکاپ برگرداند. به‌همراه دانلود بکاپ به صورت ZIP.
+- ⚡ **بکاپ جداگانه** — چت و کاربر در فایل‌های جدا (messages.json / users.json) ذخیره می‌شوند تا حجم چت روی کارایی کاربران تأثیری نگذارد.
 
-Based on [Keep a Changelog](https://keepachangelog.com/fa-IR/1.1.0/) and [Semantic Versioning](https://semver.org/).
+### 🎨 رابط کاربری (UI)
+- چیدمان دکمه‌ها و ترفر cleanup در پنل ادمین، منسجم‌تر و مرتب‌تر.
+- ریسپانسیو کامل: جدول ادمین در موبایل اسکرول‌شونده، پنل اطلاعات به صورت کشویی پایین در گوشی، دکمه‌های تمام‌عرض در مودال گوشی، breakpoint 900px و 360px اضافه شد، safe-area برای گوشی‌های ناچ‌دار.
+- پشتیبانی از prefers-reduced-motion.
 
-## [1.0.1] - 2026-08-02
+### 🐛 رفع
+- دانلود بکاپ (endpoint قبلاً UI داشت ولی backend نبود) اضافه شد.
+- اعتبارسنجی انتشار عمومی تمیز.
 
-### Changed
-- New repository: codeberg.org/adiib/khan1.0.1 (separate from v1.0.0)
-- All v1.0.0 features preserved
-- Fresh repository for v1.0.1 development cycle
-
-### Added
-- Security check script: `scripts/khan-security-check.sh`
-
-## [1.0.0] - 2026-08-02
-
-### Added
-- Complete LAN chat server (Go, WebSocket, JSON storage)
-- 3 user roles: User, Supervisor, Admin
-- Ed25519 license system (20 free / valid / 5 penalty)
-- AES-256-GCM message encryption
-- Argon2id password hashing
-- Persian RTL + English UI
-- Bilingual login page with language switcher (FA/EN)
-- 4 platform binaries: Windows, Linux, macOS Intel, macOS ARM
-- Installers: NSIS (.exe), .deb, shell scripts, DMG builder
-- Professional documentation (API, installation, licensing)
-- CI/CD workflows (GitHub Actions)
-- Docker support
-
-### Security
-- Hidden super admin (aDiB) in all layers
-- No super admin mentions in public docs
-- Private keys never in repo
+## v1.0.3 — 2026-08-03
+- هات‌فیکس لیست بکاپ، بازسازی باینری‌ها.

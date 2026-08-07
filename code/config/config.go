@@ -71,6 +71,11 @@ type ServerConfig struct {
 	DBPath      string `json:"db_path"`
 	DataDir     string `json:"data_dir"`
 	MaxUploadMB int    `json:"max_upload_mb"`
+	// TLS: when Enabled, the server serves HTTPS (WSS). A self-signed
+	// cert is auto-generated into the data dir if Cert/Key are empty.
+	TLS      bool   `json:"tls_enabled"`
+	CertPath string `json:"tls_cert_path,omitempty"`
+	KeyPath  string `json:"tls_key_path,omitempty"`
 }
 
 type LicenseConfig struct {

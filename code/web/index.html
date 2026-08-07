@@ -462,8 +462,10 @@
           <div v-if="adminTab === 'users'">
             <div class="admin-toolbar">
               <h3 style="font-size:18px;">{{ t('userManagement') }}</h3>
+              <button class="btn-secondary" style="width:auto;" @click="exportUsers">⬇️ {{ t('exportExcel') }}</button>
               <button class="btn-primary" style="width:auto;" @click="showCreateUser = true">➕ {{ t('newUser') }}</button>
             </div>
+            <div class="admin-table-wrap">
             <table class="admin-table">
               <thead>
                 <tr>
@@ -506,6 +508,7 @@
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
 
           <!-- License tab -->
@@ -567,7 +570,10 @@
               <tbody>
                 <tr v-for="b in backups" :key="b">
                   <td style="font-size:12px;">{{ b }}</td>
-                  <td><button class="mini-btn" @click="downloadBackup(b)">⬇️</button></td>
+                  <td>
+                    <button class="mini-btn" @click="restoreBackup(b)" :title="t('restore')">🔄</button>
+                    <button class="mini-btn" @click="downloadBackup(b)">⬇️</button>
+                  </td>
                 </tr>
               </tbody>
             </table>

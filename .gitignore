@@ -1,35 +1,20 @@
-# Security
-keys/private.key
-keys/private_key.pem
+# Secrets — NEVER commit
+.env
+*.env
+.env.*
+!.env.example
+!*.env.example
+
+# Build artifacts
+*.exe
+*.deb
+*.app
+dist/
 *.pem
-*.key
-!keys/public.key
+tls-key.pem
+tls-cert.pem
 
-# Runtime
-data/
-*.db.json
-*.db
-*.log
-/config.json
-
-# Build
-/bin/
-/tmp/
-
-# System
+# OS / editor
 .DS_Store
-Thumbs.db
-*.swp
-.idea/
-.vscode/
-
-# Raw binaries in installers (built copies — final artifacts in dist/)
-installers/windows/khan.exe
-installers/linux/deb/usr/bin/khan
-
-# Old binary files (keep only in dist/ for distribution)
-installers/linux/khan_1.0.2_amd64.deb
-installers/windows/KhanSetup-1.0.1.exe
-installers/windows/KhanSetup-1.0.2.exe
-installers/windows/khan.exe
-installers/linux/deb/usr/bin/khan
+*.log
+data/

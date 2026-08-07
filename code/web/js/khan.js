@@ -100,6 +100,11 @@ const I18N = {
     backupNow: 'پشتیبان‌گیری الان',
     backupFile: 'فایل پشتیبان',
     noBackups: 'هنوز پشتیبانی ساخته نشده',
+    restore: 'بازیابی',
+    restoreConfirm: 'بازیابی این نسخه پشتیبان؟ همه داده فعلی جایگزین می‌شود.',
+    restored: 'بازیابی انجام شد',
+    exportExcel: 'خروجی اکسل',
+    exportDone: 'خروجی کاربران آماده شد',
     newDepartment: 'بخش جدید',
     myProfile: 'پروفایل من',
     displayName: 'نام نمایشی',
@@ -226,6 +231,11 @@ const I18N = {
     backupNow: 'Backup Now',
     backupFile: 'Backup file',
     noBackups: 'No backups yet',
+    restore: 'Restore',
+    restoreConfirm: 'Restore this backup? All current data will be replaced.',
+    restored: 'Restore complete',
+    exportExcel: 'Export Excel',
+    exportDone: 'Users exported',
     newDepartment: 'New Department',
     myProfile: 'My Profile',
     displayName: 'Display name',
@@ -1649,6 +1659,37 @@ const app = createApp({
         a.click();
         URL.revokeObjectURL(a.href);
       } catch (e) {}
+    },
+
+    async restoreBackup(name) {
+      if (!confirm(this.t('restoreConfirm'))) return;
+      try {
+        const data = await this.api('/api/settings/restore', {
+          method: 'POST',
+          body: JSON.stringify({ name }),
+        });
+        this.toast('\u2714 ' + (data.restored || this.t('restored')), 'success');
+        this.loadBackups();
+      } catch (e) {
+        this.toast(e.message, 'error');
+      }
+    },
+
+    async exportUsers() {
+      try {
+        const res = await fetch('/api/users/export', {
+          headers: { 'Authorization': 'Bearer ' + this.session.token },
+        });
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'khan-users-export.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        this.toast('\u271c ' + this.t('exportDone'), 'success');
+      } catch (e) {
+        this.toast(e.message, 'error');
+      }
     },
 
     async refreshLogs() {

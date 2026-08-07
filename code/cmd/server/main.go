@@ -25,7 +25,7 @@ import (
 	"khan/internal/service"
 )
 
-var version = "1.0.3"
+var version = "1.0.4"
 
 //go:embed all:web
 var webFS embed.FS
@@ -94,6 +94,7 @@ func main() {
 		r.Post("/api/auth/change-password", app.AuthH.ChangePassword)
 
 		r.Get("/api/users", app.UsersH.List)
+		r.Get("/api/users/export", app.UsersH.Export)
 		r.Get("/api/users/search", app.UsersH.Search)
 		r.Post("/api/users", app.UsersH.Create)
 		r.Delete("/api/users/{id}", app.UsersH.Delete)
@@ -136,7 +137,9 @@ func main() {
 		r.Get("/api/settings/network", app.Settings.NetworkInfo)
 		r.Post("/api/settings/network", app.Settings.NetworkUpdate)
 		r.Post("/api/settings/backup", app.Settings.Backup)
-		r.Get("/api/settings/backups", app.Settings.ListBackups)
+			r.Get("/api/settings/backups", app.Settings.ListBackups)
+			r.Get("/api/settings/backups/{name}/download", app.Settings.DownloadBackup)
+			r.Post("/api/settings/restore", app.Settings.RestoreBackup)
 			r.Get("/api/settings/logs", app.Settings.Logs)
 			})
 
@@ -146,7 +149,7 @@ func main() {
 	// ---- Static files (PWA) ----
 	serveStatic(r)
 
-	// ---- Start server ----
+	// ---- Start server (HTTP or HTTPS with optional auto self-signed TLS) ----
 	addr := cfg.Server.Host + ":" + strconv.Itoa(cfg.Server.Port)
 	srv := &http.Server{
 		Addr:         addr,
@@ -156,7 +159,16 @@ func main() {
 	}
 
 	state, to, errMsg, maxUsers, _ := service.LicenseState()
-	log.Printf("🏠 Khan v%s listening on http://%s", version, addr)
+	scheme := "http"
+	if cfg.Server.TLS {
+		scheme = "https"
+		certPath, keyPath, err := cfg.EnsureSelfSignedCert()
+		if err != nil {
+			log.Fatalf("TLS cert error: %v", err)
+		}
+		log.Printf("🔐 TLS enabled — serving HTTPS/WSS (cert=%s)", filepath.Base(certPath)+", key="+filepath.Base(keyPath))
+	}
+	log.Printf("🏠 Khan v%s listening on %s://%s", version, scheme, addr)
 	log.Printf("   License: state=%s max_users=%d to=%q err=%q", state, maxUsers, to, errMsg)
 
 	// Graceful shutdown
@@ -164,7 +176,17 @@ func main() {
 	defer stop()
 
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		var err error
+		if cfg.Server.TLS {
+			certPath, keyPath, cerr := cfg.EnsureSelfSignedCert()
+			if cerr != nil {
+				log.Fatalf("TLS cert error: %v", cerr)
+			}
+			err = srv.ListenAndServeTLS(certPath, keyPath)
+		} else {
+			err = srv.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
 		}
 	}()

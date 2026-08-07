@@ -445,6 +445,49 @@ func (s *Store) Backup(destDir string) (string, error) {
 	return sub, nil
 }
 
+// RestoreFrom replaces the in-memory data with the tables found in a backup
+// directory (the timestamped folder created by Backup), then persists.
+func (s *Store) RestoreFrom(backupDir string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Build a fresh Data, load each per-table file from the backup dir.
+	kept := Data{
+		Seq: map[string]int64{},
+		Users: []UserRecord{}, Rooms: []RoomRecord{},
+		RoomMembers: []RoomMemberRecord{}, Messages: []MessageRecord{},
+		Reactions: []ReactionRecord{}, Sessions: []SessionRecord{},
+		Files: []FileRecord{}, Reads: []ReadRecord{},
+		Polls: []PollRecord{}, PollVotes: []PollVoteRecord{},
+		Invites: []InviteRecord{}, Pins: []PinRecord{},
+		Departments: []DepartmentRecord{},
+	}
+	// Copy current seq so a partial restore can't collide with new ids.
+	for k, v := range s.data.Seq {
+		kept.Seq[k] = v
+	}
+
+	for table, fname := range tableFiles {
+		data, err := os.ReadFile(filepath.Join(backupDir, fname))
+		if err != nil {
+			continue // missing file → keep empty table for that file
+		}
+		if err := json.Unmarshal(data, tablePtr(&kept, table)); err != nil {
+			return fmt.Errorf("corrupt backup %s: %w", fname, err)
+		}
+	}
+	// seq file too
+	if data, err := os.ReadFile(filepath.Join(backupDir, "seq.json")); err == nil {
+		var seq map[string]int64
+		if err := json.Unmarshal(data, &seq); err == nil && seq != nil {
+			kept.Seq = seq
+		}
+	}
+
+	s.data = &kept
+	return s.saveAllLocked()
+}
+
 // ---------- helpers ----------
 
 func nowStr() string { return time.Now().Format(time.RFC3339) }

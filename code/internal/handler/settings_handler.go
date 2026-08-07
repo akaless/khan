@@ -1,12 +1,16 @@
 package handler
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 
 	"khan/config"
 	"khan/internal/database"
@@ -31,7 +35,7 @@ func (h *SettingsHandler) SetStore(s *database.Store) { h.storeRef = s }
 func (h *SettingsHandler) Info(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"name":         "خان",
-		"version": "1.0.3",
+		"version": "1.0.4",
 		"address_type": h.cfg.Server.AddressType,
 		"ip":           h.cfg.Server.IP,
 		"dns":          h.cfg.Server.DNS,
@@ -223,13 +227,74 @@ func (h *SettingsHandler) ListBackups(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, backups)
 }
 
+// RestoreBackup loads a backup folder (by name) back into the store.
+func (h *SettingsHandler) RestoreBackup(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErr(w, http.StatusBadRequest, "درخواست نامعتبر است")
+		return
+	}
+	if req.Name == "" || strings.Contains(req.Name, "..") {
+		writeErr(w, http.StatusBadRequest, "نام بکاپ نامعتبر است")
+		return
+	}
+	dir := filepath.Join(h.backupDir(), filepath.Base(req.Name))
+	info, err := os.Stat(dir)
+	if err != nil || !info.IsDir() {
+		writeErr(w, http.StatusNotFound, "بکاپ یافت نشد")
+		return
+	}
+	if err := h.store().RestoreFrom(dir); err != nil {
+		writeErr(w, http.StatusInternalServerError, "خطا در بازیابی: "+err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "restored": req.Name})
+}
+
+// DownloadBackup zips a backup folder and streams it as an attachment.
+func (h *SettingsHandler) DownloadBackup(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	if name == "" || strings.Contains(name, "..") {
+		writeErr(w, http.StatusBadRequest, "نام بکاپ نامعتبر است")
+		return
+	}
+	dir := filepath.Join(h.backupDir(), filepath.Base(name))
+	info, err := os.Stat(dir)
+	if err != nil || !info.IsDir() {
+		writeErr(w, http.StatusNotFound, "بکاپ یافت نشد")
+		return
+	}
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", "attachment; filename="+name+".zip")
+	zw := zip.NewWriter(w)
+	defer zw.Close()
+	_ = filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
+		if err != nil || fi.IsDir() {
+			return nil
+		}
+		rel, _ := filepath.Rel(dir, path)
+		f, err := zw.Create(rel)
+		if err != nil {
+			return err
+		}
+		content, rerr := os.ReadFile(path)
+		if rerr != nil {
+			return rerr
+		}
+		_, _ = f.Write(content)
+		return nil
+	})
+}
+
 // store returns the active store (set via SetStore)
 func (h *SettingsHandler) store() *database.Store { return h.storeRef }
 
 // Logs returns server logs
 func (h *SettingsHandler) Logs(w http.ResponseWriter, r *http.Request) {
 	logs := "=== Khan Server Logs ===\nServer started on port " + strconv.Itoa(h.cfg.Server.Port) + "\n"
-	logs += "Version: 1.0.3\n"
+	logs += "Version: 1.0.4\n"
 	logs += "Data dir: " + h.cfg.Server.DataDir + "\n"
 	logs += "Logs can be viewed via journalctl -u khan or in the terminal running the server.\n"
 	writeJSON(w, http.StatusOK, map[string]string{"logs": logs})
